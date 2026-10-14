@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>王者万象棋上分计算器</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230D1220'/%3E%3Cpath d='M10 44 L20 20 L32 34 L44 20 L54 44 Z' fill='%23F0B90B'/%3E%3Crect x='14' y='46' width='36' height='6' rx='3' fill='%23F0B90B'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<style>
+  :root{
+    --bg:#0D1220;
+    --panel:#151D31;
+    --panel2:#1B2540;
+    --line:#2A3654;
+    --text:#E8EDF7;
+    --muted:#93A0BC;
+    --gold:#F0B90B;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{font-size:16px}
+  body{
+    font-family:"Noto Sans SC",-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--text);
+    min-height:100vh;line-height:1.5;
+  }
+  .wrap{max-width:600px;margin:0 auto;padding:20px 16px 40px}
+
+  .masthead{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .crown{width:30px;height:30px;flex:none}
+  .masthead h1{font-size:19px;font-weight:900;letter-spacing:.5px}
+  .masthead .tag{
+    font-size:11px;color:var(--gold);border:1px solid rgba(240,185,11,.5);
+    border-radius:99px;padding:1px 8px;margin-left:auto;white-space:nowrap;
+  }
+  .sub{font-size:13px;color:var(--muted);margin-bottom:18px}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 16px}
+
+  .result{text-align:center;padding:22px 10px 20px}
+  .result .label{font-size:14px;color:var(--muted);margin-bottom:4px}
+  .result .num{
+    font-size:60px;font-weight:900;color:var(--gold);line-height:1.1;
+    font-variant-numeric:tabular-nums;letter-spacing:1px;transition:opacity .2s;
+  }
+  .result .num.small{font-size:44px}
+  .result .unit{font-size:22px;color:var(--gold);font-weight:700;margin-left:2px}
+  .result .note{font-size:12px;color:var(--muted);margin-top:8px}
+
+  .inputs{display:grid;gap:12px;margin-bottom:14px}
+  .inputs .pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+  .field select,.field input{
+    width:100%;height:48px;background:var(--panel2);border:1px solid var(--line);
+    border-radius:10px;color:var(--text);font-size:16px;padding:0 12px;
+    font-family:inherit;outline:none;-webkit-appearance:none;appearance:none;
+  }
+  .field select{
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2393A0BC' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 12px center;
+  }
+  .field select:focus,.field input:focus{border-color:var(--gold)}
+  .field input::placeholder{color:#5A6787}
+  .hint{font-size:12px;color:var(--muted);margin:-6px 0 14px;line-height:1.7}
+
+  .path{margin-bottom:14px}
+  .bar{display:flex;height:14px;border-radius:7px;overflow:hidden;background:#0A0F1B;border:1px solid var(--line)}
+  .bar .seg{flex:none;height:100%}
+  .bar .seg.done{opacity:1}
+  .bar .seg.todo{opacity:.28}
+  .bar .seg.cur{opacity:1;outline:2px solid var(--gold);outline-offset:1px;border-radius:3px}
+  .legend{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:8px}
+
+  .detail{margin-bottom:14px}
+  .detail .head{font-size:12px;color:var(--muted);margin:4px 0 2px;padding:8px 4px 4px;border-top:1px solid var(--line)}
+  .detail .head:first-child{border-top:none}
+  .detail .row{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--line)}
+  .detail .row:last-child{border-bottom:none}
+  .dot{width:12px;height:12px;border-radius:50%;flex:none}
+  .detail .name{font-size:14px;font-weight:500;flex:1}
+  .detail .name .sub2{font-size:11px;color:var(--muted);font-weight:400;margin-left:6px}
+  .detail .pts{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
+  .detail .pts.done{color:var(--muted);font-weight:500}
+  .detail .pts.remain{color:var(--gold)}
+
+  .est{padding-top:4px}
+  .est h2{font-size:14px;font-weight:700;margin-bottom:10px}
+  .est .out{
+    background:var(--panel2);border:1px solid var(--line);border-radius:12px;
+    padding:12px 14px;font-size:14px;color:var(--muted);
+  }
+  .est .out b{color:var(--text);font-size:16px}
+  .est .out .gold{color:var(--gold);font-weight:700}
+  .est .warn{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.6}
+
+  .footnote{font-size:11px;color:#6B7896;margin-top:20px;line-height:1.8;text-align:center}
+  .footnote b{color:#93A0BC;font-weight:500}
+
+  @media (min-width:768px){
+    .wrap{max-width:640px;padding:32px 24px 48px}
+    .card{padding:24px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <svg class="crown" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 44 L20 20 L32 34 L44 20 L54 44 Z" fill="#F0B90B"/><rect x="14" y="46" width="36" height="6" rx="3" fill="#F0B90B"/></svg>
+    <h1>王者万象棋上分计算器</h1>
+    <span class="tag">2770分上王者</span>
+  </div>
+  <p class="sub">选段位 → 选小段 → 填分数，算出离王者还差多少</p>
+
+  <div class="card">
+    <div class="result">
+      <div class="label">距王者还差</div>
+      <div class="num" id="bigNum">--</div>
+      <div class="note" id="resultNote">请选择段位并输入分数</div>
+    </div>
+
+    <div class="inputs">
+      <div class="field">
+        <label for="tier">当前段位</label>
+        <select id="tier">
+          <option value="见习新秀">见习新秀</option>
+          <option value="倔强青铜">倔强青铜</option>
+          <option value="秩序白银">秩序白银</option>
+          <option value="荣耀黄金">荣耀黄金</option>
+          <option value="尊贵铂金" selected>尊贵铂金</option>
+          <option value="永恒钻石">永恒钻石</option>
+          <option value="至尊星耀">至尊星耀</option>
+        </select>
+      </div>
+      <div class="pair">
+        <div class="field">
+          <label for="seg">段内小段</label>
+          <select id="seg"></select>
+        </div>
+        <div class="field">
+          <label for="pts">小段内分数</label>
+          <input id="pts" type="number" inputmode="numeric" min="0" value="39" placeholder="0">
+        </div>
+      </div>
+    </div>
+    <p class="hint" id="tierHint">第1小段最低（营地显示 V），满该段分数升下一个小段</p>
+
+    <div class="path">
+      <div class="bar" id="bar" aria-hidden="true"></div>
+      <div class="legend"><span>见习</span><span>王者</span></div>
+    </div>
+
+    <div class="detail" id="detail"></div>
+
+    <div class="est">
+      <h2>按每把得分估算</h2>
+      <div class="inputs">
+        <div class="pair">
+          <div class="field">
+            <label for="perGame">每把平均得分</label>
+            <input id="perGame" type="number" inputmode="decimal" min="1" value="25" placeholder="如：25">
+          </div>
+          <div class="field">
+            <label for="mins">每把用时（分钟）</label>
+            <input id="mins" type="number" inputmode="numeric" min="1" value="30" placeholder="如：30">
+          </div>
+        </div>
+      </div>
+      <div class="out" id="estOut"></div>
+      <p class="warn">估算按平均每把得分粗算，实际受排名、连胜加成影响，仅供参考。段位结构：见习3段×40 / 青铜4段×50 / 白银5段×60 / 黄金5段×70 / 铂金6段×80 / 钻石6段×100 / 星耀6段×120，全程2770分上王者。</p>
+    </div>
+  </div>
+
+  <p class="footnote">官方口径：每大段分小段，小段满额晋级，王者需累计 <b>2770</b> 分。<br>本工具仅作上分规划参考，不关联官方数据接口。</p>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var TIERS = [
+    {name:"见习新秀", segs:3, per:40},
+    {name:"倔强青铜", segs:4, per:50},
+    {name:"秩序白银", segs:5, per:60},
+    {name:"荣耀黄金", segs:5, per:70},
+    {name:"尊贵铂金", segs:6, per:80, color:"#7FD4D4"},
+    {name:"永恒钻石", segs:6, per:100, color:"#5AA7E8"},
+    {name:"至尊星耀", segs:6, per:120, color:"#A86AE8"}
+  ];
+  var ROMAN = ["V","IV","III","II","I",""];
+  var TOTAL = 2770;
+
+  var elTier = document.getElementById("tier");
+  var elSeg = document.getElementById("seg");
+  var elPts = document.getElementById("pts");
+  var elBig = document.getElementById("bigNum");
+  var elNote = document.getElementById("resultNote");
+  var elHint = document.getElementById("tierHint");
+  var elBar = document.getElementById("bar");
+  var elDetail = document.getElementById("detail");
+  var elPer = document.getElementById("perGame");
+  var elMins = document.getElementById("mins");
+  var elEst = document.getElementById("estOut");
+
+  function tierIndex(t){
+    for(var i=0;i<TIERS.length;i++){ if(TIERS[i].name===t) return i; }
+    return -1;
+  }
+  function baseOf(idx){
+    var s = 0;
+    for(var k=0;k<idx;k++){ s += TIERS[k].segs * TIERS[k].per; }
+    return s;
+  }
+  function segLabel(t, si){
+    if(t.segs === 5) return t.name + " " + ROMAN[si];
+    if(t.segs > 5 && si < t.segs-1) return t.name + " " + ROMAN[si];
+    if(t.segs > 5 && si === t.segs-1) return t.name + "（满段）";
+    return "第" + (si+1) + "小段";
+  }
+
+  function fillSegOptions(){
+    var idx = tierIndex(elTier.value);
+    var t = TIERS[idx];
+    var html = "";
+    for(var i=0;i<t.segs;i++){
+      var lo = i * t.per, hi = (i+1) * t.per;
+      html += '<option value="' + i + '">' + segLabel(t, i) + "（" + lo + "~" + hi + "分）" + '</option>';
+    }
+    elSeg.innerHTML = html;
+    elSeg.value = 0;
+  }
+
+  function render(){
+    var idx = tierIndex(elTier.value);
+    var t = TIERS[idx];
+    var si = parseInt(elSeg.value, 10);
+    if(isNaN(si) || si < 0 || si >= t.segs) si = 0;
+    var raw = parseInt(elPts.value, 10);
+    if(isNaN(raw)) raw = 0;
+    var p = Math.max(0, Math.min(raw, t.per));
+
+    var base = baseOf(idx);
+    var gained = base + si * t.per + p;
+    var remain = TOTAL - gained;
+    var segLeft = t.per - p;
+
+    elBig.textContent = remain;
+    elBig.classList.toggle("small", remain >= 10000);
+
+    elNote.textContent = "已累计 " + gained + " 分 · " + segLabel(t, si) + " 还剩 " + segLeft + " 分";
+
+    elHint.textContent = t.name + "共 " + t.segs + " 小段，每小段 " + t.per + " 分（满段 " + t.segs*t.per + " 分）"
+      + (idx < TIERS.length-1 ? "，升 " + TIERS[idx+1].name : "");
+
+    elBar.innerHTML = "";
+    TIERS.forEach(function(ti, i){
+      var d = document.createElement("div");
+      var cls = "todo";
+      if(i < idx) cls = "done";
+      else if(i === idx) cls = "cur";
+      d.className = "seg " + cls;
+      d.style.width = (ti.segs * ti.per / TOTAL * 100).toFixed(2) + "%";
+      d.style.background = ti.color || "#8A7A5C";
+      elBar.appendChild(d);
+    });
+
+    var html = "";
+    html += '<div class="head">' + t.name + "（段内剩余）</div>";
+    for(var i = si; i < t.segs; i++){
+      var left = (i === si) ? segLeft : t.per;
+      var nm = segLabel(t, i);
+      var sub = (i === si) ? "当前小段" : (i === t.segs-1 ? "打满升" + (idx < TIERS.length-1 ? TIERS[idx+1].name : "王者") : "");
+      html += '<div class="row">'
+        + '<span class="dot" style="background:' + (t.color || "#8A7A5C") + '"></span>'
+        + '<span class="name">' + nm + '<span class="sub2">' + sub + '</span></span>'
+        + '<span class="pts remain">' + left + '</span></div>';
+    }
+    for(var j = idx+1; j < TIERS.length; j++){
+      var tj = TIERS[j];
+      html += '<div class="head">' + tj.name + "（整段）</div>";
+      html += '<div class="row">'
+        + '<span class="dot" style="background:' + (tj.color || "#8A7A5C") + '"></span>'
+        + '<span class="name">' + tj.segs + " 小段 × " + tj.per + " 分<span class=\"sub2\">整段 " + tj.segs*tj.per + " 分</span></span>"
+        + '<span class="pts remain">' + (tj.segs*tj.per) + '</span></div>';
+    }
+    elDetail.innerHTML = html;
+
+    var per = parseFloat(elPer.value);
+    var mins = parseInt(elMins.value, 10);
+    if(isNaN(per) || per <= 0) per = 0;
+    if(isNaN(mins) || mins <= 0) mins = 30;
+    if(remain <= 0){
+      elEst.innerHTML = "已经到王者了";
+    } else if(per > 0){
+      var games = Math.ceil(remain / per);
+      var hours = (games * mins) / 60;
+      var hStr = hours >= 10 ? hours.toFixed(1) : Math.round(hours);
+      elEst.innerHTML = "按每把 <b>" + per + "</b> 分算，还需要约 <b class=\"gold\">" + games + "</b> 把"
+        + (mins !== 30 ? "（每把" + mins + "分钟）" : "")
+        + "，约 <b class=\"gold\">" + hStr + "</b> 小时";
+    } else {
+      elEst.innerHTML = "请填写每把平均得分";
+    }
+  }
+
+  elTier.addEventListener("change", function(){ fillSegOptions(); render(); });
+  elSeg.addEventListener("change", render);
+  elPts.addEventListener("input", render);
+  elPer.addEventListener("input", render);
+  elMins.addEventListener("input", render);
+
+  fillSegOptions();
+  render();
+})();
+</script>
+</body>
+</html>
