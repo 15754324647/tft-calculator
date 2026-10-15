@@ -210,7 +210,7 @@
     <p class="hint" id="diffHint">按官方小段结构换算累计分：见习3×40 / 青铜4×50 / 白银5×60 / 黄金5×70 / 铂金6×80 / 钻石6×100 / 星耀6×120</p>
   </div>
 
-  <p class="footnote">官方口径：每大段分小段，小段满额晋级，王者需累计 <b>2770</b> 分。<br>本工具仅作上分规划参考，不关联官方数据接口。<br>工具版本 v2.3 · 2026-10-15（6 小段位标识：V / IV / III / II / I / <b>VI</b>，VI 段 600~720 分晋级王者）</p>
+  <p class="footnote">官方口径：每大段分小段，小段满额晋级，王者需累计 <b>2770</b> 分。<br>本工具仅作上分规划参考，不关联官方数据接口。<br>工具版本 v2.4 · 2026-10-15（6 小段标识从低到高：VI / V / IV / III / II / I，I 段 600~720 分打满升王者）</p>
 </div>
 
 <script>
@@ -225,7 +225,8 @@
     {name:"永恒钻石", segs:6, per:100, color:"#5AA7E8"},
     {name:"至尊星耀", segs:6, per:120, color:"#A86AE8"}
   ];
-  var ROMAN = ["V","IV","III","II","I","VI"];
+  var ROMAN5 = ["V","IV","III","II","I"];
+  var ROMAN6 = ["VI","V","IV","III","II","I"];
   var TOTAL = 2770;
 
   var elTier = document.getElementById("tier");
@@ -250,7 +251,8 @@
     return s;
   }
   function segLabel(t, si){
-    if(t.segs >= 5) return t.name + " " + ROMAN[si];
+    if(t.segs === 5) return t.name + " " + ROMAN5[si];
+    if(t.segs > 5) return t.name + " " + ROMAN6[si];
     return "第" + (si+1) + "小段";
   }
 
