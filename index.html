@@ -170,6 +170,46 @@
     </div>
   </div>
 
+  <div class="card" id="diffCard">
+    <div class="result">
+      <div class="label">累计上分</div>
+      <div class="num small" id="diffNum">--</div>
+      <div class="note" id="diffNote">填起始和当前分数，算一共上了多少分</div>
+    </div>
+
+    <div class="inputs">
+      <div class="field">
+        <label for="diffTierS">起始段位</label>
+        <select id="diffTierS"></select>
+      </div>
+      <div class="pair">
+        <div class="field">
+          <label for="diffSegS">起始小段</label>
+          <select id="diffSegS"></select>
+        </div>
+        <div class="field">
+          <label for="diffPtsS">起始分数</label>
+          <input id="diffPtsS" type="number" inputmode="numeric" min="0" value="0" placeholder="0">
+        </div>
+      </div>
+      <div class="field">
+        <label for="diffTierC">当前段位</label>
+        <select id="diffTierC"></select>
+      </div>
+      <div class="pair">
+        <div class="field">
+          <label for="diffSegC">当前小段</label>
+          <select id="diffSegC"></select>
+        </div>
+        <div class="field">
+          <label for="diffPtsC">当前分数</label>
+          <input id="diffPtsC" type="number" inputmode="numeric" min="0" value="39" placeholder="0">
+        </div>
+      </div>
+    </div>
+    <p class="hint" id="diffHint">按官方小段结构换算累计分：见习3×40 / 青铜4×50 / 白银5×60 / 黄金5×70 / 铂金6×80 / 钻石6×100 / 星耀6×120</p>
+  </div>
+
   <p class="footnote">官方口径：每大段分小段，小段满额晋级，王者需累计 <b>2770</b> 分。<br>本工具仅作上分规划参考，不关联官方数据接口。</p>
 </div>
 
@@ -309,7 +349,82 @@
 
   fillSegOptions();
   render();
+
+  // ===== 上分差值：起始分数 → 当前分数 =====
+  var elDTierS = document.getElementById("diffTierS");
+  var elDSegS = document.getElementById("diffSegS");
+  var elDPtsS = document.getElementById("diffPtsS");
+  var elDTierC = document.getElementById("diffTierC");
+  var elDSegC = document.getElementById("diffSegC");
+  var elDPtsC = document.getElementById("diffPtsC");
+  var elDiffNum = document.getElementById("diffNum");
+  var elDiffNote = document.getElementById("diffNote");
+
+  function diffFillTiers(){
+    var html = "";
+    TIERS.forEach(function(t, i){
+      html += '<option value="' + i + '">' + t.name + '</option>';
+    });
+    elDTierS.innerHTML = html;
+    elDTierC.innerHTML = html;
+    elDTierS.value = 0;
+    elDTierC.value = 4;
+  }
+  function diffFillSeg(sel, idx){
+    var t = TIERS[idx];
+    var html = "";
+    for(var i=0;i<t.segs;i++){
+      var lo = i * t.per, hi = (i+1) * t.per;
+      html += '<option value="' + i + '">' + segLabel(t, i) + "（" + lo + "~" + hi + "分）" + '</option>';
+    }
+    sel.innerHTML = html;
+    sel.value = 0;
+  }
+  function gainedOf(tierSel, segSel, ptsInput){
+    var idx = parseInt(tierSel.value, 10);
+    if(isNaN(idx) || idx < 0 || idx >= TIERS.length) idx = 0;
+    var t = TIERS[idx];
+    var si = parseInt(segSel.value, 10);
+    if(isNaN(si) || si < 0 || si >= t.segs) si = 0;
+    var raw = parseInt(ptsInput.value, 10);
+    if(isNaN(raw)) raw = 0;
+    var p = Math.max(0, Math.min(raw, t.per));
+    return baseOf(idx) + si * t.per + p;
+  }
+  function diffRender(){
+    var gs = gainedOf(elDTierS, elDSegS, elDPtsS);
+    var gc = gainedOf(elDTierC, elDSegC, elDPtsC);
+    var diff = gc - gs;
+    elDiffNum.textContent = (diff < 0 ? "-" : "") + Math.abs(diff);
+    if(diff > 0){
+      elDiffNote.textContent = "从 " + gs + " 分打到 " + gc + " 分，一共上了 " + diff + " 分";
+    } else if(diff === 0){
+      elDiffNote.textContent = "当前分数与起始相同，还没上分";
+    } else {
+      elDiffNote.textContent = "当前比起始低了 " + (-diff) + " 分";
+    }
+  }
+  diffFillTiers();
+  diffFillSeg(elDSegS, 0);
+  diffFillSeg(elDSegC, 4);
+  elDTierS.addEventListener("change", function(){ diffFillSeg(elDSegS, parseInt(elDTierS.value,10)); diffRender(); });
+  elDTierC.addEventListener("change", function(){ diffFillSeg(elDSegC, parseInt(elDTierC.value,10)); diffRender(); });
+  elDSegS.addEventListener("change", diffRender);
+  elDSegC.addEventListener("change", diffRender);
+  elDPtsS.addEventListener("input", diffRender);
+  elDPtsC.addEventListener("input", diffRender);
+  diffRender();
 })();
+</script>
+<script>
+  /* 访问埋点：线上页面加载后上报一次；本地 file:// 预览不上报，静默失败 */
+  (function(){
+    if(location.protocol.indexOf('http') !== 0) return;
+    try {
+      fetch('/tft-stats/v?p=' + encodeURIComponent(location.pathname + location.search) + '&t=' + Date.now(),
+        {method:'GET', cache:'no-store', keepalive:true}).catch(function(){});
+    } catch(e) {}
+  })();
 </script>
 </body>
 </html>
